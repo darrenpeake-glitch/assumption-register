@@ -1,65 +1,59 @@
-import Image from "next/image";
+import { prisma } from "../lib/prisma";
+import { ensureSeedAssumption } from "../lib/seed";
 
-export default function Home() {
+function priority(risk: number, confidence: number) {
+  return risk * (6 - confidence);
+}
+
+export default async function Home() {
+  // temporary seed so you can see real data immediately
+  await ensureSeedAssumption();
+
+  const assumptions = await prisma.assumption.findMany({
+    orderBy: [{ updatedAt: "desc" }],
+    select: {
+      id: true,
+      statement: true,
+      area: true,
+      risk: true,
+      confidence: true,
+      status: true,
+      updatedAt: true,
+    },
+  });
+
+  const sorted = assumptions
+    .map((a) => ({ ...a, priority: priority(a.risk, a.confidence) }))
+    .sort((a, b) => b.priority - a.priority);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <main style={{ maxWidth: 980, margin: "0 auto", padding: 24, fontFamily: "system-ui" }}>
+      <h1 style={{ marginBottom: 8 }}>Assumption Register</h1>
+      <p style={{ marginTop: 0, color: "#555" }}>
+        Priority = risk × (6 − confidence)
+      </p>
+
+      <div style={{ display: "grid", gap: 12, marginTop: 16 }}>
+        {sorted.map((a) => (
+          <div key={a.id} style={{ border: "1px solid #ddd", borderRadius: 8, padding: 16 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+              <strong>{a.statement}</strong>
+              <span>Priority: {a.priority}</span>
+            </div>
+
+            <div style={{ display: "flex", gap: 12, marginTop: 8, color: "#555", flexWrap: "wrap" }}>
+              <span>{a.area}</span>
+              <span>{a.status}</span>
+              <span>Risk {a.risk}/5</span>
+              <span>Conf {a.confidence}/5</span>
+              <span style={{ marginLeft: "auto" }}>
+                {new Date(a.updatedAt).toLocaleString()}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </main>
   );
 }
+
