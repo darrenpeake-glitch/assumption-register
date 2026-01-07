@@ -1,5 +1,4 @@
 import { prisma } from "../lib/prisma";
-import { ensureSeedAssumption } from "../lib/seed";
 
 function priority(risk: number, confidence: number) {
   return risk * (6 - confidence);
@@ -7,7 +6,6 @@ function priority(risk: number, confidence: number) {
 
 export default async function Home() {
   // temporary seed so you can see real data immediately
-  await ensureSeedAssumption();
 
   const assumptions = await prisma.assumption.findMany({
     orderBy: [{ updatedAt: "desc" }],

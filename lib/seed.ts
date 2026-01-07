@@ -1,6 +1,6 @@
 import { prisma } from "./prisma";
 
-export async function ensureSeedAssumption() {
+export async function seedOnce() {
   const count = await prisma.assumption.count();
   if (count > 0) return;
 
@@ -15,3 +15,4 @@ export async function ensureSeedAssumption() {
     },
   });
 }
+
