@@ -1,9 +1,20 @@
+export const dynamic = "force-dynamic";
+
 import { prisma } from "../../../lib/prisma";
 import { addEvidence, updateAssumptionStatus } from "../../actions";
 
 const statuses = ["UNTESTED", "TESTING", "VALIDATED", "INVALIDATED", "PARKED"] as const;
 
-export default async function AssumptionDetailPage({ params }: { params: { id: string } }) {
+export default async function AssumptionDetailPage({
+  params,
+  searchParams,
+}: {
+  params: { id: string };
+  searchParams?: Promise<{ error?: string }>;
+}) {
+  const sp = await searchParams;
+  const error = sp?.error;
+
   const a = await prisma.assumption.findUnique({
     where: { id: params.id },
     include: { evidence: { orderBy: { createdAt: "desc" } } },
@@ -21,6 +32,13 @@ export default async function AssumptionDetailPage({ params }: { params: { id: s
   return (
     <main style={{ maxWidth: 980, margin: "0 auto", padding: 24, fontFamily: "system-ui", display: "grid", gap: 16 }}>
       <a href="/">← Back</a>
+
+      {error ? (
+        <div style={{ padding: 12, border: "1px solid #f5c2c7", borderRadius: 8 }}>
+          <strong style={{ display: "block", marginBottom: 4 }}>Couldn’t complete action</strong>
+          <span>{error}</span>
+        </div>
+      ) : null}
 
       <section style={{ border: "1px solid #ddd", borderRadius: 8, padding: 16 }}>
         <h1 style={{ marginTop: 0, marginBottom: 8 }}>{a.statement}</h1>
@@ -54,9 +72,7 @@ export default async function AssumptionDetailPage({ params }: { params: { id: s
             New status
             <select name="status" defaultValue={a.status}>
               {statuses.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
+                <option key={s} value={s}>{s}</option>
               ))}
             </select>
           </label>
